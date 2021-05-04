@@ -1,0 +1,100 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+// FINITE ELEMENT METHOD - BEAM ELEMENT ALAYSIS ALGORITHM
+
+int main()
+{
+    //TOPOLOJI MATRISININ BOYUTLARI
+    int topology[3][6] = 
+    {
+        { 1,   2,   3,   4,   5,   6 },
+        { 4,   5,   6,   7,   8,   9 },
+        { 7,   8,   9,   10,  11,  12 }
+    };
+    
+    int KGSize = 12; // TOPOLOJI MATRISININ BOYUTU (12x12)
+
+    // ELEMAN SAYISI
+    int eleman = 3;
+
+    // A, L, I, E Değerleri (sırasıyla)
+    double variables[3][4] =
+    {
+        { 6300, 4050, 4252500, 200000 },
+        { 6300, 6750, 4252500, 117000 },
+        { 6300, 2700, 4252500, 68000 }
+    };
+    
+    double matrises[eleman][6][6]; // STIFFNESS MATRIS BOYUTU
+    
+    for (int i = 0; i < eleman; i++)
+    {
+        double A = 0, L = 0, I = 0, E = 0; // yeni değişkeni buraya gir
+        A = variables[i][0];
+        L = variables[i][1];
+        I = variables[i][2];
+        E = variables[i][3]; // Değişken sayısı artınca [i][3] 3'ü arttır, 
+
+        double formuleArray[6][6] =
+        {
+            { A * (L * L),    0,            0,                  A * (L * L),    0,             0               },
+            { 0,              12 * I,       6 * L * I,          0,              -12 * I,       6 * L * I       },
+            { 0,              6 * L * I,    4 * (L * L) * I,    0,              -6 * L * I,    2 * (L * L) * I },
+            { A * (L * L),    0,            0,                  A * (L * L),    0,             0               },
+            { 0,              -12 * I,      -6 * L * I,         0,              12 * I,        -6 * L * I      },
+            { 0,              6 * L * I,    2 * (L * L) * I,    0,              0,             4 * (L * L) * I }
+        };
+
+        for (int k = 0; k < 6; k++)
+            for (int l = 0; l < 6; l++)
+                matrises[i][k][l] = E / (L * L * L) * formuleArray[k][l]; // Matrisin başındaki kat sayısı iptal edeceksen EL^3'ü sil
+    } 
+    
+    double KG[KGSize][KGSize];
+    for (int k = 0; k < 3; k++)
+    {
+        for (int l = 0; l < 6; l++)
+        {
+            for (int m = 0; m < 6; m++)
+            {
+                KG[(topology[k][l] - 1)][(topology[k][m] - 1)] =
+                    KG[(topology[k][l] - 1)][(topology[k][m] - 1)] +
+                    matrises[k][l][m];
+            }
+        }
+    }
+    
+    for (int j = 0; j < KGSize; j++)
+    {
+        for (int k = 0; k < KGSize; k++)
+        {
+            printf("%f\t", KG[j][k]);
+        }
+        printf("\n");
+    }
+    
+    printf("\n\nSonuç matrisini kaydetmek istiyor musunuz (y/n): ");
+    char save = getchar();
+    
+    if(save == 'y')
+    {
+        FILE *fp;
+        fp = fopen ("D:\\matris.xls","w");
+        
+        for (int i = 0; i < KGSize; i++)
+        {
+            for (int j = 0; j < KGSize; j++)
+            {
+                fprintf (fp, "%f\t", KG[i][j]);
+            }
+            fprintf (fp, "\n");
+        }
+        
+        fclose (fp);
+        
+        printf("\n\nKG matrisi D:\\matris.xls kaydedildi.\n\n");
+    }
+    
+    return 0;
+}
